@@ -1,0 +1,267 @@
+---
+title: "Final Project IV"
+author: "Kevin Yu"
+format: docx
+editor: visual
+---
+
+## Background/Motivation for the Study
+
+Many people envy children from wealthy families, believing they can buy whatever they want, receive top-tier education, and eventually secure prestigious jobs. This phenomenon is known as “class reproduction” or “social reproduction.” But are these affluent children truly happy? I have a close friend from a wealthy family who was sent to posh school and eventually worked at a globally renowned company. However, he grew up under immense pressure from his parents to excel in language and extracurricular, leading to significant unhappiness. Because of him, I decided to validate this matter. According to studies, emotional state is highly correlated with stress \[1\], and high levels of stress can affect various bodily functions, such as sleep quality, blood pressure, and more. I would like to explore the correlation between high-income groups and these variables through NHANES data. NHANES (National Health and Nutrition Examination Survey) is a program conducted by the National Center for Health Statistics (NCHS) to assess the health and nutritional status of adults and children in the United States. The data is collected through a combination of interviews, physical examinations, and laboratory tests. Each survey cycle is nationally representative, using a complex, stratified, multistage probability sampling design. The dataset contains 75 variables, covering areas such as demographic, socioeconomic factors, lifestyle, and health conditions.
+
+## Research Question and Hypothesis
+
+Based on my friend's experience, I would like to know the relationship between the income and emotional state. To measure emotional state, I chose stress as the evaluation indicator. Many researchs indicate that high stress can result in poor sleep quality \[2\], high blood pressure \[3\], and frequent smoking and marijuana use \[4\]. In addition to physiological variables, self-assessment is also a crucial factor in evaluating emotional state, so I included "Depressed" as a reference indicator. In summary, I selected these three physiological variables and one self-assessment to evaluate the relationship between income and emotional state.
+
+I expect that individuals from high-income groups tend to experience lower stress levels, which may contribute to better sleep quality, lower blood pressure, less frequent smoking or marijuana use, and depressed. Their financial security could alleviate common stressors, allowing for healthier lifestyles and improved overall well-being. This suggests that the advantages of wealth extend beyond material comfort to potentially fostering better emotional and physiological health.
+
+#### Physiological:
+
+Sleep Time (SleepHrsNight)
+
+H(0)s: There is no significant association between HHIncome and sleep time.
+
+H(A)s: There is a significant association between HHIncome and sleep time.
+
+Blood pressure (BPSysAve)
+
+H(0)~b~: There is no significant association between HHIncome and blood pressure.
+
+H(A)~b~: There is a significant association between HHIncome and blood pressure.
+
+Regular marijuana user (RegularMarij)
+
+H(0)~m~: There is no significant association between HHIncome and regular marijuana user.
+
+H(A)~m~: There is significant association between HHIncome and regular marijuana user.
+
+#### Self-Assessment:
+
+Depressed
+
+H(0)~d~: There is no significant association between HHIncome and depressed.
+
+H(A)~d~: There is significant association between HHIncome and depressed.
+
+## Data Description and Exploratory Data Analysis
+
+The NHANES contains 10,000 rows of data and 75 variables. I extract the variables which I need for this research project, including "HHIncome," "SleepHrsNight," "BPSysAve," "RegularMarij," and "Depressed." HHIncome is the total annual gross income for the household, which represent the wealth of the family. SleepHrsNight is number of hours that participants usually gets at night. BPSysAve is the combination of systolic blood pressure. RegularMarij is participant has been a regular marijuana user or not. Depressed is the number of days that participant felt down, depressed or hopeless.
+
+```{r results='hide', message=FALSE, warning=FALSE}
+library(NHANES)
+library(dplyr)
+
+selected_data <- NHANES %>%
+  select(HHIncome, SleepHrsNight, BPSysAve, RegularMarij, Depressed)
+
+head(selected_data)
+```
+
+```{r}
+# clean the data
+cleaned_data <- na.omit(selected_data)
+head(cleaned_data)
+```
+
+I divided the data into two categories. The first category includes "HHIncome," "RegularMarij," and "Depressed," which are classified using categorical values, such as 0–4999 or 5000–9999. The second category includes "SleepHrsNight" and "BPSysAve," which are numerical values.
+
+In the categorical values, there are 1,172 individuals with HHIncome \> 99999, accounting for 26%, followed by 598 individuals in the 75,000–99,999 range, accounting for 13%. This shows that the high-income group makes up nearly half of the dataset.
+
+For RegularMarij, approximately 70% answered "no," indicating that most individuals do not have a habit of using marijuana. As for Depressed, 3,516 individuals (78%) did not report feeling stressed, while 15% reported feeling severe stress, suggesting that most participants did not feel depressed.
+
+```{r}
+# Basic summary statistics with cateforical variables
+categorical_summary <- lapply(cleaned_data[, c("HHIncome", "RegularMarij", "Depressed")], function(x) {
+  freq_table <- table(x)
+  prop_table <- prop.table(freq_table)
+  list(Frequency = freq_table, Proportion = prop_table)
+})
+
+categorical_summary
+```
+
+In the numeric variables, the mean of SleepHrsNight is 6.85 hours, with a standard deviation of 1.31. Research shows that individuals who sleep less than 8 hours are more likely to experience stress, and 6.85 hours is also below the 7 to 9 hours of sleep recommended by the National Sleep Foundation (NSF) \[5\]. Therefore, it can be inferred that most participants in the study are sleep-deprived and experiencing higher levels of stress.
+
+According to research, a systolic blood pressure higher than 130 (mm-Hg) is considered hypertensive \[6\], while the mean BPSysAve is 117.55 (mm-Hg), indicating that the incidence of high blood pressure is relatively low among the participants.
+
+```{r}
+# Basic summary statistics with numeric variables
+numeric_vars <- c("SleepHrsNight", "BPSysAve")
+
+numeric_summary <- cleaned_data %>%
+  select(all_of(numeric_vars)) %>%
+  summarise_all(list(
+    Mean = ~mean(.),
+    SD = ~sd(.),
+    Min = ~min(.),
+    Max = ~max(.),
+    N = ~length(.)
+  ))
+
+numeric_summary
+```
+
+In order to check the relationship between variables, I used ggplot2 to visualize the data, such as histogram, bar chart, and box plot. Histogram is ideal for visualizing the distribution of continuous numerical data. It allows us to quickly identify patterns such as skewness, modality, and the presence of outliers. Bar chart is effective for comparing categorical data or summarizing counts across different groups. It provides a clear visual representation of differences or trends among categories, making it easy to identify which category has the highest or lowest frequency. A box plot is excellent for summarizing the central tendency, spread, and variability of a data set, especially when comparing multiple groups. It provides a visual representation of the median, interquartile range, and potential outliers, making it easy to assess the distribution of data and spot differences between categories. Box plots are particularly useful for identifying skewness and comparing variability across datasets.
+
+```{r message=FALSE, warning=FALSE}
+# Visualization
+library(ggplot2)
+
+# Histogram of HHIncome
+ggplot(cleaned_data, aes(x = HHIncome)) +
+  geom_histogram(stat = "count", fill = "skyblue", color = "black") +
+  labs(title = "Histogram of HHIncome", x = "HHIncome Category", y = "Count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+According to the histogram, the largest number of individuals falls into the "more than 99999" category. This indicates that this data set is highly suitable for my research question, as my focus is primarily on the high-income group.
+
+```{r}
+# Box plot of SleepHrsNight
+ggplot(cleaned_data, aes(y = SleepHrsNight)) +
+  geom_boxplot(fill = "purple", color = "black") +
+  labs(title = "Box Plot of Sleep Hours Per Night", y = "Sleep Hours Per Night", x = "") +
+  theme_minimal()
+```
+
+According to the box plot, Q1 to Q3 are concentrated within the 6–8 hours of sleep range. Based on the study I previously found, individuals experiencing high stress often sleep less than 8 hours. Therefore, this variable is highly likely to serve as strong evidence to support my hypothesis.
+
+```{r}
+# Box plot of BPSysAve
+ggplot(cleaned_data, aes(y = BPSysAve)) +
+  geom_boxplot(fill = "orange", color = "black") +
+  labs(title = "Box Plot of Average Systolic Blood Pressure", y = "Average Systolic Blood Pressure", x = "") +
+  theme_minimal()
+```
+
+According to the box plot, most participants have blood pressure levels around 120, indicating that they do not suffer from hypertension. However, the plot also reveals many outliers within this variable. I can further analyze these outliers to determine what might have caused them.
+
+```{r}
+# Bar Chart of RegularMarij
+ggplot(cleaned_data, aes(x = RegularMarij)) +
+  geom_bar(fill = "coral", color = "black") +
+  labs(title = "Bar Chart of Regular Marijuana Use", x = "Regular Marijuana Use", y = "Count") +
+  theme_minimal()
+```
+
+According to the bar chart, most participants in this data set do not have a habit of using marijuana. However, there are still over 1,000 participants who do. I can examine these 1,000+ participants to determine whether they all belong to the high-income group or if they do not.
+
+```{r message=FALSE, warning=FALSE}
+# Histogram of Depressed
+ggplot(cleaned_data, aes(x = Depressed)) +
+  geom_histogram(stat = "count", fill = "lightgreen", color = "black") +
+  labs(title = "Histogram of Depression Levels", x = "Depression Level", y = "Count") +
+  theme_minimal()
+```
+
+According to the histogram, most participants in this data set do not feel depressed, which is similar to the pattern observed in the Regular Marijuana Use variable. However, I can still investigate the participants categorized as "several" and "most" to see if they belong to the high-income group. It is also possible that high-income individuals are inherently less likely to feel depressed.
+
+## Statistical Analysis
+
+For the statistical analysis, I used ANOVA and Chi-square tests as the analysis methods because HHIncome is a categorical variable. ANOVA was used to examine the relationship between the categorical variable (HHIncome) and numerical variables, such as SleepHrsNight and BPSysAve, to determine whether there are significant differences in the means across income groups. The Chi-square test was employed to assess the association between HHIncome and other categorical variables, such as RegularMarij and Depressed. If the ANOVA results are statistically significant, I will perform Tukey's post-hoc test to identify which specific income groups differ significantly, ensuring a more detailed understanding. This approach allows for a comprehensive examination of the relationships between income and various outcomes.
+
+#### Physiological:
+
+```{r}
+# Anova
+result_sleep <- aov(SleepHrsNight ~ HHIncome, data = selected_data)
+summary(result_sleep)
+
+# Tukey
+tukey_sleep <- TukeyHSD(result_sleep, conf.level = .95)
+tukey_sleep
+```
+
+I used ANOVA test to analyze the relationship between HHIncome and SleepHrsNight. The p-value was 1.85e-07, which is significantly less than 0.05. This result indicates a rejection of the null hypothesis, suggesting that there are significant differences in mean SleepHrsNight across the income groups. Following the significant ANOVA result, Tukey's method was performed to identify the specific income group pairs with significant differences in mean SleepHrsNight. With a 95% confidence interval, 10 out of the 66 possible pairwise comparisons showed p-values less than 0.05, including:
+
+-   20000-24999 vs. 0-4999
+
+-   35000-44999 vs. 0-4999
+
+-   75000-99999 vs. 0-4999
+
+-   More than 99999 vs. 0-4999
+
+-   75000-99999 vs. 10000-14999
+
+-   75000-99999 vs. 15000-19999
+
+-   75000-99999 vs. 25000-34999
+
+-   More than 99999 vs. 25000-34999
+
+-   75000-99999 vs. 45000-54999
+
+-   More than 99999 vs. 45000-54999
+
+These results suggest that higher-income groups generally reported significantly different mean SleepHrsNight compared to lower-income groups. This indicates that income level may play a role in influencing sleep duration.
+
+```{r}
+# Anova
+result_bp <- aov(BPSysAve ~ HHIncome, data = selected_data)
+summary(result_bp)
+
+# Tukey
+tukey_bp <- TukeyHSD(result_bp, conf.level = .95)
+tukey_bp
+```
+
+The p-value obtained from the ANOVA analysis with HHIncome and BPSysAve was 6.83e-08, which is significantly smaller than the 0.05 threshold. This result leads to the rejection of the null hypothesis, indicating that there are significant differences in mean BPSysAve across the income groups. To further explore these differences, Tukey's method was performed. At a 95% confidence interval, 9 out of the 66 possible pairwise comparisons showed p-values less than 0.05, indicating significant differences. The significant pairwise comparisons were:
+
+-   75000-99999 vs. 5000-9999
+
+-   20000-24999 vs. 10000-14999
+
+-   75000-99999 vs. 10000-14999
+
+-   More than 99999 vs. 10000-14999
+
+-   75000-99999 vs. 25000-34999
+
+-   More than 99999 vs. 25000-34999
+
+-   75000-99999 vs. 35000-44999
+
+-   More than 99999 vs. 35000-44999
+
+-   75000-99999 vs. 65000-74999
+
+These results suggest that systolic blood pressure varies significantly across certain income groups. The observed patterns highlight potential disparities in blood pressure that may be influenced by income levels, which could reflect differences in lifestyle, access to healthcare, or stress-related factors among these groups.
+
+```{r}
+# Chi-square
+chi_Marij <- table(selected_data$HHIncome, selected_data$RegularMarij)
+chi_test_Marij <- chisq.test(chi_Marij)
+chi_test_Marij
+```
+
+I used Chi-square test to assess the relationship between HHIncome and RegularMarij. The test yielded a chi-squared value of 36.486 with 11 degrees of freedom and a p-value of 0.0001405. Since the p-value is significantly less than the 0.05 threshold, I can reject the null hypothesis, indicating a significant association between income level and regular marijuana use.
+
+#### Self-Assessment:
+
+```{r}
+# Chi-square
+chi_depressed <- table(selected_data$HHIncome, selected_data$Depressed)
+chi_test_depressed <- chisq.test(chi_depressed)
+chi_test_depressed
+```
+
+A Chi-square test was conducted to investigate the association between HHIncome and Depressed. The results revealed a chi-squared value of 295.12 with 22 degrees of freedom and a p-value of less than 2.2e-16. Given that the p-value is much smaller than the 0.05 significance level, I can reject the null hypothesis. This suggests that there is a significant relationship between income level and the likelihood of experiencing depression, indicating that depression rates are influenced by income.
+
+## Conclusion
+
+Income level was shown to significantly influence various health and lifestyle factors, as supported by the results of both ANOVA and Chi-square tests. Higher-income individuals reported longer sleep durations and healthier blood pressure levels, confirming a positive association between income and physical health indicators. Additionally, the data revealed that higher-income groups were less likely to use marijuana regularly and reported lower rates of depression, suggesting that wealth may offer protective benefits for mental health and lifestyle choices.
+
+All of my hypotheses were supported by the results, as the findings consistently showed positive correlations between income level and the chosen health variables. This confirms my assumption that higher income is associated with better physical and emotional well-being.
+
+The key takeaways from this project are clear: wealth can play a significant role in improving both physical and mental health outcomes. Higher-income groups tend to enjoy advantages such as better sleep, lower blood pressure, and reduced stress levels, as well as healthier lifestyle choices. These results emphasize the importance of socioeconomic factors in shaping overall well-being and provide evidence for the potential benefits of economic stability in enhancing quality of life.
+
+## References
+
+1.  Szabó, M. (2011). The emotional experience associated with worrying: anxiety, depression, or stress?. *Anxiety, Stress, & Coping*, *24*(1), 91-105.
+2.  Martire, V. L., Caruso, D., Palagini, L., Zoccoli, G., & Bastianini, S. (2020). Stress & sleep: A relationship lasting a lifetime. *Neuroscience & Biobehavioral Reviews*, *117*, 65-77.
+3.  Gasperin, D., Netuveli, G., Dias-da-Costa, J. S., & Pattussi, M. P. (2009). Effect of psychological stress on blood pressure increase: a meta-analysis of cohort studies. *Cadernos de saude publica*, *25*(4), 715-726.
+4.  Pomerleau, O. F., & Pomerleau, C. S. (1991). Research on stress and smoking: progress and problems. *British journal of addiction*, *86*(5), 599-603.
+5.  Kim, H. J., Oh, S. Y., Joo, J. H., Choi, D. W., & Park, E. C. (2019). The relationship between sleep duration and perceived stress: findings from the 2017 Community Health Survey in Korea. *International journal of environmental research and public health*, *16*(17), 3208.
+6.  Flint, A. C., Conell, C., Ren, X., Banki, N. M., Chan, S. L., Rao, V. A., ... & Bhatt, D. L. (2019). Effect of systolic and diastolic blood pressure on cardiovascular outcomes. *New England Journal of Medicine*, *381*(3), 243-251.
