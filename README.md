@@ -31,7 +31,7 @@ These outcomes are assumed to result from reduced stress levels associated with 
 
 ## 📊 Data Source
 
-- **Dataset:** [NHANES – National Health and Nutrition Examination Survey](https://www.cdc.gov/nchs/nhanes/index.htm)
+- **Dataset:** [NHANES – National Health and Nutrition Examination Survey]
 - **Variables Used:**
   - `HHIncome`: Household income category
   - `SleepHrsNight`: Average hours of sleep per night
